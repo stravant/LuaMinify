@@ -1515,6 +1515,7 @@ function Format_Mini(ast)
 			out = joinStatementsSafe(out, "end")
 
 		elseif statement.AstType == 'GenericForStatement' then
+			statement.Scope:RenameVars()
 			out = "for "
 			for i = 1, #statement.VariableList do
 				out = out..statement.VariableList[i].Name

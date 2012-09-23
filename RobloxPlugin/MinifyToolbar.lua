@@ -25,32 +25,68 @@ minifyButton.Click:connect(function()
 		if o:IsA('Script') or o:IsA('LocalScript') then
 			--can't read linkedsource, bail out
 			if o.LinkedSource ~= '' then
-				error("Minify Plugin: Cannot Minify a script with a LinkedSource", 0)
+				Spawn(function()
+					error("Minify Plugin: Cannot Minify a script with a LinkedSource", 0)
+				end)
+				return
 			end
 
 			--see if it has been minified
 			if o.Name:sub(-4,-1) == '_Min' then
 				local original = o:FindFirstChild(o.Name:sub(1,-5))
-				if not original then
-					error("Minify Plugin: Missing original script `"..o.Name:sub(1,-5).."`", 0)
-				end
-				--
-				local st, min = _G.Minify(original.Source)
-				if st then
-					o.Source = min
+				if original then
+					local st, min = _G.Minify(original.Source)
+					if st then
+						game:GetService("ChangeHistoryService"):SetWaypoint("Minify `"..original.Name.."`")
+						if replace then
+							o.Source = min
+							original:Destroy()
+						else
+							o.Source = min
+						end
+					else
+						Spawn(function()
+							error("Minify Plugin: "..min, 0)
+						end)
+						return
+					end
 				else
-					error("Minify Plugin: "..min, 0)
+					if replace then
+						local st, min = _G.Minify(o.Source)
+						if st then
+							game:GetService("ChangeHistoryService"):SetWaypoint("Minify `"..original.Name.."`")
+							o.Source = min
+						else
+							Spawn(function()
+								error("Minify Plugin: "..min, 0)
+							end)
+							return
+						end						
+					else
+						Spawn(function()
+							error("Minify Plugin: Missing original script `"..o.Name:sub(1,-5).."`", 0)
+						end)
+					end
 				end
 			else
 				local st, min = _G.Minify(o.Source)
 				if st then
-					local original = o:Clone()
-					original.Parent = o
-					original.Disabled = true
-					o.Name = o.Name.."_Min"
-					o.Source = min
+					game:GetService("ChangeHistoryService"):SetWaypoint("Minify `"..o.Name.."`")
+					if replace then
+						o.Source = min
+						o.Name = o.Name.."_Min"
+					else
+						local original = o:Clone()
+						original.Parent = o
+						original.Disabled = true
+						o.Name = o.Name.."_Min"
+						o.Source = min
+					end
 				else
-					error("Minify Plugin: "..min, 0)
+					Spawn(function()
+						error("Minify Plugin: "..min, 0)
+					end)
+					return
 				end 
 			end
 		end
