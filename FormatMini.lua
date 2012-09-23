@@ -117,6 +117,7 @@ function Format_Mini(ast)
 			out = out..formatExpr(expr.Base)..expr.Indexer..expr.Ident.Data
 
 		elseif expr.AstType == 'Function' then
+			expr.Scope:RenameVars()
 			out = out.."function("
 			if #expr.Arguments > 0 then
 				for i = 1, #expr.Arguments do

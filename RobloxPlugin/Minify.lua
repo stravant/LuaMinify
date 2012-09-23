@@ -1,4 +1,11 @@
 
+--
+-- Minify.lua
+--
+-- A compilation of all of the neccesary code to Minify a source file, all into one single
+-- script for usage on Roblox. Needed to deal with Roblox' lack of `require`.
+--
+
 function lookupify(tb)
 	for _, v in pairs(tb) do
 		tb[v] = true
@@ -455,8 +462,8 @@ function ParseLua(src)
 		local scope = {}
 		scope.Parent = parent
 		scope.LocalList = {}
+		scope.LocalMap = {}
 		function scope:RenameVars()
-			local newList = {}
 			for _, var in pairs(scope.LocalList) do
 				local id;
 				VarUid = 0 
@@ -469,15 +476,14 @@ function ParseLua(src)
 						varToUse = (varToUse - d) / #VarDigits
 						id = id..VarDigits[d+1]
 					end
-				until not GlobalVarGetMap[id] and not parent:GetLocal(id) and not newList[id]
+				until not GlobalVarGetMap[id] and not parent:GetLocal(id) and not scope.LocalMap[id]
 				var.Name = id
-				newList[id] = var
+				scope.LocalMap[id] = var
 			end
-			scope.LocalList = newList
 		end
 		function scope:GetLocal(name)
 			--first, try to get my variable 
-			local my = scope.LocalList[name]
+			local my = scope.LocalMap[name]
 			if my then return my end
 
 			--next, try parent
@@ -495,7 +501,8 @@ function ParseLua(src)
 			my.Name = name
 			my.CanRename = true
 			--
-			scope.LocalList[name] = my
+			scope.LocalList[#scope.LocalList+1] = my
+			scope.LocalMap[name] = my
 			--
 			return my
 		end
@@ -1344,6 +1351,7 @@ function Format_Mini(ast)
 			out = out..formatExpr(expr.Base)..expr.Indexer..expr.Ident.Data
 
 		elseif expr.AstType == 'Function' then
+			expr.Scope:RenameVars()
 			out = out.."function("
 			if #expr.Arguments > 0 then
 				for i = 1, #expr.Arguments do

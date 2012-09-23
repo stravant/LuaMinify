@@ -1,4 +1,11 @@
 
+--
+-- MinifyToolbar.lua
+--
+-- The main script that generates a toolbar for studio that allows minification of selected
+-- scripts, calling on the _G.Minify function defined in `Minify.lua`
+--
+
 local plugin = PluginManager():CreatePlugin()
 local toolbar = plugin:CreateToolbar("Minify")
 local minifyButton = toolbar:CreateButton("", "Minify Selected Script", 'MinifyButtonIcon.png')
