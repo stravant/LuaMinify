@@ -10,13 +10,23 @@ Currently the minifier performs:
 - Reduces the source to the minimal spacing, spaces are only inserted where actually needed.
 
 
-Usage
------
+LuaMinify Command Line Utility Usage
+------------------------------------
 
 The `LuaMinify` shell and batch files are given as shortcuts to running a command line instance of the minifier with the following usage:
 
     LuaMinify sourcefile [destfile]
 
 Which will minify to a given destination file, or to a copy of the source file with _min appended to the filename if no output file is given.
+
+
+LuaMinify Roblox Plugin Usage
+-----------------------------
+
+First, download the source code, which you can do by hitting this button:
+
+![Click That](http://github.com/stravant/LuaMinify/raw/master/RobloxPluginInstructions.png)
+
+Then copy the `RobloxPlugin` folder from the source into your Roblox Plugins directory, which can be found by hitting `Tools->Open Plugins Folder` in Roblox Studio.
 
 
