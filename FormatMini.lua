@@ -282,7 +282,12 @@ function Format_Mini(ast)
 				end
 			end
 			out = out.." in"
-			out = joinStatementsSafe(out, formatExpr(statement.Generator))
+			for i = 1, #statement.Generators do
+				out = joinStatementsSafe(out, formatExpr(statement.Generators[i]))
+				if i ~= #statement.Generators then
+					out = joinStatementsSafe(out, ',')
+				end
+			end
 			out = joinStatementsSafe(out, "do")
 			out = joinStatementsSafe(out, formatStatlist(statement.Body))
 			out = joinStatementsSafe(out, "end")

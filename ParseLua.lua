@@ -953,8 +953,15 @@ function ParseLua(src)
 				if not tok:ConsumeKeyword('in') then
 					return false, GenerateError("`in` expected.")
 				end
-				local st, generator = ParseExpr(scope)
-				if not st then return false, generator end
+				local generators = {}
+				local st, firstGenerator = ParseExpr(scope)
+				if not st then return false, firstGenerator end
+				generators[#generators+1] = firstGenerator
+				while tok:ConsumeSymbol(',') do
+					local st, gen = ParseExpr(scope)
+					if not st then return false, gen end
+					generators[#generators+1] = gen
+				end
 				if not tok:ConsumeKeyword('do') then
 					return false, GenerateError("`do` expected.")
 				end
@@ -968,7 +975,7 @@ function ParseLua(src)
 				nodeFor.AstType = 'GenericForStatement'
 				nodeFor.Scope = forScope
 				nodeFor.VariableList = varList
-				nodeFor.Generator = generator
+				nodeFor.Generators = generators
 				nodeFor.Body = body
 				stat = nodeFor
 			end
