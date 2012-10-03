@@ -1,13 +1,10 @@
+--
+-- Beautifier
+--
+-- Returns a beautified version of the code, including comments
+--
 
-require'ParseLua'
-
---
--- FormatMini.lua
---
--- Returns the minified version of an AST. Operations which are performed:
--- - All comments and whitespace are ignored
--- - All local variables are renamed
---
+require"ParseLua"
 
 local LowerChars = lookupify{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 
 							 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 
@@ -17,23 +14,23 @@ local UpperChars = lookupify{'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
 							 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'}
 local Digits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 
-function Format_Mini(ast)
-	local formatStatlist, formatExpr;
-	local count = 0
-	--
+function Format_Beautify(ast)
+	local formatStatlist, formatExpr
+    local indent = 0
+	local EOL = "\n"
+    
+    local function getIndentation()
+        return string.rep("    ", indent)
+    end
+    
 	local function joinStatementsSafe(a, b, sep)
-		if count > 150 then
-			count = 0
-			return a.."\n"..b
-		end
-		sep = sep or ' '
+		sep = sep or ''
 		local aa, bb = a:sub(-1,-1), b:sub(1,1)
 		if UpperChars[aa] or LowerChars[aa] or aa == '_' then
 			if not (UpperChars[bb] or LowerChars[bb] or bb == '_' or Digits[bb]) then
 				--bb is a symbol, can join without sep
-				return a..b
+				return a .. b
 			elseif bb == '(' then
-				print("==============>>>",aa,bb)
 				--prevent ambiguous syntax
 				return a..sep..b
 			else
@@ -62,9 +59,9 @@ function Format_Mini(ast)
 		local out = string.rep('(', expr.ParenCount or 0)
 		if expr.AstType == 'VarExpr' then
 			if expr.Local then
-				out = out..expr.Local.Name
+				out = out .. expr.Local.Name
 			else
-				out = out..expr.Name
+				out = out .. expr.Name
 			end
 
 		elseif expr.AstType == 'NumberExpr' then
@@ -80,12 +77,12 @@ function Format_Mini(ast)
 			out = joinStatementsSafe(out, "nil")
 
 		elseif expr.AstType == 'BinopExpr' then
-			out = joinStatementsSafe(out, formatExpr(expr.Lhs))
-			out = joinStatementsSafe(out, expr.Op)
+			out = joinStatementsSafe(out, formatExpr(expr.Lhs)) .. " "
+			out = joinStatementsSafe(out, expr.Op) .. " "
 			out = joinStatementsSafe(out, formatExpr(expr.Rhs))
 
 		elseif expr.AstType == 'UnopExpr' then
-			out = joinStatementsSafe(out, expr.Op)
+			out = joinStatementsSafe(out, expr.Op .. " ")
 			out = joinStatementsSafe(out, formatExpr(expr.Rhs))
 
 		elseif expr.AstType == 'DotsExpr' then
@@ -97,17 +94,17 @@ function Format_Mini(ast)
 			for i = 1, #expr.Arguments do
 				out = out..formatExpr(expr.Arguments[i])
 				if i ~= #expr.Arguments then
-					out = out..","
+					out = out..", "
 				end
 			end
 			out = out..")"
 
 		elseif expr.AstType == 'TableCallExpr' then
-			out = out..formatExpr(expr.Base)
+			out = out..formatExpr(expr.Base) .. " "
 			out = out..formatExpr(expr.Arguments[1])
 
 		elseif expr.AstType == 'StringCallExpr' then
-			out = out..formatExpr(expr.Base)
+			out = out..formatExpr(expr.Base) .. " "
 			out = out..expr.Arguments[1].Data
 
 		elseif expr.AstType == 'IndexExpr' then
@@ -117,139 +114,141 @@ function Format_Mini(ast)
 			out = out..formatExpr(expr.Base)..expr.Indexer..expr.Ident.Data
 
 		elseif expr.AstType == 'Function' then
-			expr.Scope:RenameVars()
+            -- anonymous function
 			out = out.."function("
 			if #expr.Arguments > 0 then
 				for i = 1, #expr.Arguments do
 					out = out..expr.Arguments[i].Name
 					if i ~= #expr.Arguments then
-						out = out..","
+						out = out..", "
 					elseif expr.VarArg then
-						out = out..",..."
+						out = out..", ..."
 					end
 				end
 			elseif expr.VarArg then
 				out = out.."..."
 			end
-			out = out..")"
+			out = out..")" .. EOL
+            indent = indent + 1
 			out = joinStatementsSafe(out, formatStatlist(expr.Body))
-			out = joinStatementsSafe(out, "end")
-
+            indent = indent - 1
+			out = joinStatementsSafe(out, getIndentation() .. "end")
 		elseif expr.AstType == 'ConstructorExpr' then
-			out = out.."{"
+			out = out.."{ "
 			for i = 1, #expr.EntryList do
 				local entry = expr.EntryList[i]
 				if entry.Type == 'Key' then
-					out = out.."["..formatExpr(entry.Key).."]="..formatExpr(entry.Value)
+					out = out.."["..formatExpr(entry.Key).."] = "..formatExpr(entry.Value)
 				elseif entry.Type == 'Value' then
 					out = out..formatExpr(entry.Value)
 				elseif entry.Type == 'KeyString' then
-					out = out..entry.Key.."="..formatExpr(entry.Value)
+					out = out..entry.Key.." = "..formatExpr(entry.Value)
 				end
 				if i ~= #expr.EntryList then
-					out = out..","
+					out = out..", "
 				end
 			end
-			out = out.."}"
+			out = out.." }"
 
 		end
 		out = out..string.rep(')', expr.ParenCount or 0)
-		count = count + #out
 		return out
 	end
 
 	local formatStatement = function(statement)
-		local out = ''
+		local out = ""
 		if statement.AstType == 'AssignmentStatement' then
+            out = getIndentation()
 			for i = 1, #statement.Lhs do
 				out = out..formatExpr(statement.Lhs[i])
 				if i ~= #statement.Lhs then
-					out = out..","
+					out = out..", "
 				end
 			end
 			if #statement.Rhs > 0 then
-				out = out.."="
+				out = out.." = "
 				for i = 1, #statement.Rhs do
 					out = out..formatExpr(statement.Rhs[i])
 					if i ~= #statement.Rhs then
-						out = out..","
+						out = out..", "
 					end
 				end
 			end
-
 		elseif statement.AstType == 'CallStatement' then
-			out = formatExpr(statement.Expression)
-
+			out = getIndentation() .. formatExpr(statement.Expression)
 		elseif statement.AstType == 'LocalStatement' then
-			out = out.."local "
+			out = getIndentation() .. out.."local "
 			for i = 1, #statement.LocalList do
 				out = out..statement.LocalList[i].Name
 				if i ~= #statement.LocalList then
-					out = out..","
+					out = out..", "
 				end
 			end
 			if #statement.InitList > 0 then
-				out = out.."="
+				out = out.." = "
 				for i = 1, #statement.InitList do
 					out = out..formatExpr(statement.InitList[i])
 					if i ~= #statement.InitList then
-						out = out..","
+						out = out..", "
 					end
 				end
 			end
-
 		elseif statement.AstType == 'IfStatement' then
-			out = joinStatementsSafe("if", formatExpr(statement.Clauses[1].Condition))
-			out = joinStatementsSafe(out, "then")
-			out = joinStatementsSafe(out, formatStatlist(statement.Clauses[1].Body))
+			out = getIndentation() .. joinStatementsSafe("if ", formatExpr(statement.Clauses[1].Condition))
+			out = joinStatementsSafe(out, " then") .. EOL
+            indent = indent + 1
+            out = joinStatementsSafe(out, formatStatlist(statement.Clauses[1].Body))
+            indent = indent - 1
 			for i = 2, #statement.Clauses do
 				local st = statement.Clauses[i]
 				if st.Condition then
-					out = joinStatementsSafe(out, "elseif")
+					out = getIndentation() .. joinStatementsSafe(out, getIndentation() .. "elseif ")
 					out = joinStatementsSafe(out, formatExpr(st.Condition))
-					out = joinStatementsSafe(out, "then")
+					out = joinStatementsSafe(out, " then") .. EOL
 				else
-					out = joinStatementsSafe(out, "else")
+					out = joinStatementsSafe(out, getIndentation() .. "else") .. EOL
 				end
+                indent = indent + 1
 				out = joinStatementsSafe(out, formatStatlist(st.Body))
+                indent = indent - 1
 			end
-			out = joinStatementsSafe(out, "end")
-
+			out = joinStatementsSafe(out, getIndentation() .. "end") .. EOL
 		elseif statement.AstType == 'WhileStatement' then
-			out = joinStatementsSafe("while", formatExpr(statement.Condition))
-			out = joinStatementsSafe(out, "do")
+			out = getIndentation() .. joinStatementsSafe("while ", formatExpr(statement.Condition))
+			out = joinStatementsSafe(out, " do") .. EOL
+            indent = indent + 1
 			out = joinStatementsSafe(out, formatStatlist(statement.Body))
-			out = joinStatementsSafe(out, "end")
-
+            indent = indent - 1
+			out = joinStatementsSafe(out, getIndentation() .. "end") .. EOL
 		elseif statement.AstType == 'DoStatement' then
-			out = joinStatementsSafe(out, "do")
+			out = getIndentation() .. joinStatementsSafe(out, "do") .. EOL
+            indent = indent + 1
 			out = joinStatementsSafe(out, formatStatlist(statement.Body))
-			out = joinStatementsSafe(out, "end")
-
+            indent = indent - 1
+			out = joinStatementsSafe(out, getIndentation() .. "end") .. EOL
 		elseif statement.AstType == 'ReturnStatement' then
-			out = "return"
+			out = getIndentation() .. "return "
 			for i = 1, #statement.Arguments do
 				out = joinStatementsSafe(out, formatExpr(statement.Arguments[i]))
 				if i ~= #statement.Arguments then
-					out = out..","
+					out = out..", "
 				end
 			end
-
 		elseif statement.AstType == 'BreakStatement' then
-			out = "break"
-
+			out = getIndentation() .. "break"
 		elseif statement.AstType == 'RepeatStatement' then
-			out = "repeat"
+			out = getIndentation() .. "repeat" .. EOL
+            indent = indent + 1
 			out = joinStatementsSafe(out, formatStatlist(statement.Body))
-			out = joinStatementsSafe(out, "until")
-			out = joinStatementsSafe(out, formatExpr(statement.Condition))
-
+            indent = indent - 1
+			out = joinStatementsSafe(out, getIndentation() .. "until ")
+			out = joinStatementsSafe(out, formatExpr(statement.Condition)) .. EOL
 		elseif statement.AstType == 'Function' then
-			statement.Scope:RenameVars()
 			if statement.IsLocal then
-				out = "local"
+				out = "local "
 			end
 			out = joinStatementsSafe(out, "function ")
+            out = getIndentation() .. out
 			if statement.IsLocal then
 				out = out..statement.Name.Name
 			else
@@ -260,72 +259,80 @@ function Format_Mini(ast)
 				for i = 1, #statement.Arguments do
 					out = out..statement.Arguments[i].Name
 					if i ~= #statement.Arguments then
-						out = out..","
+						out = out..", "
 					elseif statement.VarArg then
-						print("Apply vararg")
 						out = out..",..."
 					end
 				end
 			elseif statement.VarArg then
 				out = out.."..."
 			end
-			out = out..")"
+			out = out..")" .. EOL
+            indent = indent + 1
 			out = joinStatementsSafe(out, formatStatlist(statement.Body))
-			out = joinStatementsSafe(out, "end")
-
+            indent = indent - 1
+			out = joinStatementsSafe(out, getIndentation() .. "end") .. EOL
 		elseif statement.AstType == 'GenericForStatement' then
-			statement.Scope:RenameVars()
-			out = "for "
+			out = getIndentation() .. "for "
 			for i = 1, #statement.VariableList do
 				out = out..statement.VariableList[i].Name
 				if i ~= #statement.VariableList then
-					out = out..","
+					out = out..", "
 				end
 			end
-			out = out.." in"
+			out = out.." in "
 			for i = 1, #statement.Generators do
 				out = joinStatementsSafe(out, formatExpr(statement.Generators[i]))
 				if i ~= #statement.Generators then
-					out = joinStatementsSafe(out, ',')
+					out = joinStatementsSafe(out, ', ')
 				end
 			end
-			out = joinStatementsSafe(out, "do")
+			out = joinStatementsSafe(out, " do") .. EOL
+            indent = indent + 1
 			out = joinStatementsSafe(out, formatStatlist(statement.Body))
-			out = joinStatementsSafe(out, "end")
-
+            indent = indent - 1
+			out = joinStatementsSafe(out, getIndentation() .. "end") .. EOL
 		elseif statement.AstType == 'NumericForStatement' then
-			out = "for "
-			out = out..statement.Variable.Name.."="
-			out = out..formatExpr(statement.Start)..","..formatExpr(statement.End)
+			out = getIndentation() .. "for "
+			out = out..statement.Variable.Name.." = "
+			out = out..formatExpr(statement.Start)..", "..formatExpr(statement.End)
 			if statement.Step then
-				out = out..","..formatExpr(statement.Step)
+				out = out..", "..formatExpr(statement.Step)
 			end
-			out = joinStatementsSafe(out, "do")
+			out = joinStatementsSafe(out, " do") .. EOL
+            indent = indent + 1
 			out = joinStatementsSafe(out, formatStatlist(statement.Body))
-            out = joinStatementsSafe(out, "end")
+            indent = indent - 1
+			out = joinStatementsSafe(out, getIndentation() .. "end") .. EOL
         elseif statement.AstType == 'LabelStatement' then
-            out = getIndentation() .. "::" .. statement.Label .. "::"
+            out = getIndentation() .. "::" .. statement.Label .. "::" .. EOL
         elseif statement.AstType == 'GotoStatement' then
-            out = getIndentation() .. "goto " .. statement.Label
+            out = getIndentation() .. "goto " .. statement.Label .. EOL
         elseif statement.AstType == 'Comment' then
-            -- ignore
+            if statement.CommentType == 'Shebang' then
+                out = getIndentation() .. statement.Data
+                --out = out .. EOL
+            elseif statement.CommentType == 'Comment' then
+                out = getIndentation() .. statement.Data
+                --out = out .. EOL
+            elseif statement.CommentType == 'LongComment' then
+                out = getIndentation() .. statement.Data
+                --out = out .. EOL
+            end
         else
-            print("Unknown AST Type: " .. statement.AstType)
+            print("Unknown AST Type: ", statement.AstType)
 		end
-		count = count + #out
 		return out
 	end
 
 	formatStatlist = function(statList)
 		local out = ''
-		statList.Scope:RenameVars()
 		for _, stat in pairs(statList.Body) do
-			out = joinStatementsSafe(out, formatStatement(stat), ';')
+			out = joinStatementsSafe(out, formatStatement(stat) .. EOL)
 		end
 		return out
 	end
 
-	ast.Scope:RenameVars()
 	return formatStatlist(ast)
 end
 

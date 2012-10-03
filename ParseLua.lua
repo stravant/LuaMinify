@@ -73,6 +73,7 @@ function LexLua(src)
 			local start = p
 			if peek() == '[' then
 				local equalsCount = 0
+                local depth = 1
 				while peek(equalsCount+1) == '=' do
 					equalsCount = equalsCount + 1
 				end
@@ -98,11 +99,35 @@ function LexLua(src)
 								foundEnd = false
 							end
 						else
+                            if peek() == '[' then
+                                -- is there an embedded long string?
+                                local embedded = true
+                                for i = 1, equalsCount do
+                                    if peek(i) ~= '=' then 
+                                        embedded = false 
+                                        break 
+                                    end
+                                end
+                                if peek(equalsCount + 1) == '[' and embedded then
+                                    -- oh look, there was
+                                    depth = depth + 1
+                                    for i = 1, (equalsCount + 2) do
+                                        get()
+                                    end
+                                end
+                            end
 							foundEnd = false
 						end
 						--
 						if foundEnd then
-							break
+							depth = depth - 1
+                            if depth == 0 then 
+                                break 
+                            else
+                                for i = 1, equalsCount + 2 do
+                                    get()
+                                end
+                            end
 						else
 							get()
 						end
@@ -126,6 +151,29 @@ function LexLua(src)
 				return nil
 			end
 		end
+        
+        local c = peek()
+        if c == '#' and peek(1) == '!' then 
+            -- #! shebang for linux scripts
+            get()
+            get()
+            leadingWhite = "#!"
+            while peek() ~= '\n' and peek() ~= '' do
+                leadingWhite = leadingWhite .. get()
+            end
+            token = { 
+                Type = 'Comment', 
+                CommentType = 'Shebang', 
+                Data = leadingWhite, 
+                Line = line, 
+                Char = char 
+            }
+            token.Print = function()
+                return "<"..(token.Type .. string.rep(' ', 7-#token.Type)).."  "..(token.Data or '').." >"
+            end
+            
+            table.insert(tokens, token)
+        end
 
 		--main token emitting loop
 		while true do
@@ -133,18 +181,38 @@ function LexLua(src)
 			--preceding the token. This prevents the parser needing to deal with comments 
 			--separately.
 			local leadingWhite = ''
+            local longStr = false
 			while true do
 				local c = peek()
-				if WhiteChars[c] then
+				if c == ' ' or c == '\t' then
 					--whitespace
-					leadingWhite = leadingWhite..get()
+					--leadingWhite = leadingWhite..get()
+                    get() -- ignore whitespace
+                elseif c == '\n' or c == '\r' then
+                    get()
+                    if leadingWhite ~= "" then
+                        local token = {
+                            Type = 'Comment', 
+                            CommentType = longStr and 'LongComment' or 'Comment', 
+                            Data = leadingWhite, 
+                            Line = line, 
+                            Char = char,
+                        }
+                        token.Print = function()
+                            return "<"..(token.Type .. string.rep(' ', 7-#token.Type)).."  "..(token.Data or '').." >"
+                        end
+                        table.insert(tokens, token)
+                        leadingWhite = ""
+                    end
 				elseif c == '-' and peek(1) == '-' then
 					--comment
-					get();get()
-					leadingWhite = leadingWhite..'--'
+					get()
+                    get()
+					leadingWhite = leadingWhite .. '--'
 					local _, wholeText = tryGetLongString()
 					if wholeText then
 						leadingWhite = leadingWhite..wholeText
+                        longStr = true
 					else
 						while peek() ~= '\n' and peek() ~= '' do
 							leadingWhite = leadingWhite..get()
@@ -154,6 +222,19 @@ function LexLua(src)
 					break
 				end
 			end
+            if leadingWhite ~= "" then
+                local token = {
+                    Type = 'Comment', 
+                    CommentType = longStr and 'LongComment' or 'Comment', 
+                    Data = leadingWhite, 
+                    Line = line, 
+                    Char = char,
+                }
+                token.Print = function()
+                    return "<"..(token.Type .. string.rep(' ', 7-#token.Type)).."  "..(token.Data or '').." >"
+                end
+                table.insert(tokens, token)
+            end
 
 			--get the initial char
 			local thisLine = line
@@ -279,7 +360,8 @@ function LexLua(src)
 			end
 
 			--add the emitted symbol, after adding some common data
-			toEmit.LeadingWhite = leadingWhite
+			-- No longer necessary : leading white
+            --toEmit.LeadingWhite = leadingWhite
 			toEmit.Line = thisLine
 			toEmit.Char = thisChar
 			toEmit.Print = function()
@@ -413,9 +495,10 @@ function ParseLua(src)
 		scope.Parent = parent
 		scope.LocalList = {}
 		scope.LocalMap = {}
-		function scope:RenameVars()
+        
+		function scope:ObfuscateVariables()
 			for _, var in pairs(scope.LocalList) do
-				local id;
+				local id
 				VarUid = 0 
 				repeat
 					VarUid = VarUid + 1
@@ -431,6 +514,21 @@ function ParseLua(src)
 				scope.LocalMap[id] = var
 			end
 		end
+        
+        -- Renames a variable from this scope and down. 
+        -- Does not rename global variables. 
+        function scope:RenameVariable(old, newName)
+            if type(old) == "table" then
+                old = old.Name
+            end
+            for _, var in pairs(scope.LocalList) do
+                if var.Name == old then
+                    var.Name = newName
+                    scope.LocalMap[newName] = var
+                end
+            end
+        end
+        
 		function scope:GetLocal(name)
 			--first, try to get my variable 
 			local my = scope.LocalMap[name]
@@ -444,6 +542,7 @@ function ParseLua(src)
 
 			return nil
 		end
+        
 		function scope:CreateLocal(name)
 			--create my own var
 			local my = {}
@@ -456,6 +555,7 @@ function ParseLua(src)
 			--
 			return my
 		end
+        
 		scope.Print = function() return "<Scope>" end
 		return scope
 	end
@@ -819,7 +919,16 @@ function ParseLua(src)
 
 	local function ParseStatement(scope)
 		local stat = nil
-		if tok:ConsumeKeyword('if') then
+		--print(tok.Peek().Print())
+        
+        if tok:Peek().Type == 'Comment' then
+            local t = tok:Get()
+            stat = { 
+                AstType = 'Comment',
+                CommentType = t.CommentType,
+                Data = t.Data
+            }
+        elseif tok:ConsumeKeyword('if') then
 			--setup
 			local nodeIfStat = {}
 			nodeIfStat.AstType = 'IfStatement'
@@ -1176,16 +1285,18 @@ function ParseLua(src)
 		local nodeStatlist = {}
 		nodeStatlist.Scope = CreateScope(scope)
 		nodeStatlist.AstType = 'Statlist'
+        nodeStatlist.Body = { }
 		--
-		local stats = {}
+		--local stats = {}
 		--
 		while not statListCloseKeywords[tok:Peek().Data] and not tok:IsEof() do
 			local st, nodeStatement = ParseStatement(nodeStatlist.Scope)
 			if not st then return false, nodeStatement end
-			stats[#stats+1] = nodeStatement
+			--stats[#stats+1] = nodeStatement
+            nodeStatlist.Body[#nodeStatlist.Body + 1] = nodeStatement
 		end
 		--
-		nodeStatlist.Body = stats
+		--nodeStatlist.Body = stats
 		return true, nodeStatlist
 	end
 
