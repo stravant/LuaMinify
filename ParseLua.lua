@@ -180,7 +180,7 @@ function LexLua(src)
                     token.Print = function()
                         return "<"..(token.Type .. string.rep(' ', 7-#token.Type)).."  "..(token.Data or '').." >"
                     end
-                    
+                    leadingWhite = ""
                     table.insert(leading, token)
                 end
 				if c == ' ' or c == '\t' then
