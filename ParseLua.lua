@@ -152,44 +152,44 @@ function LexLua(src)
 			end
 		end
         
-        local c = peek()
-        if c == '#' and peek(1) == '!' then 
-            -- #! shebang for linux scripts
-            get()
-            get()
-            leadingWhite = "#!"
-            while peek() ~= '\n' and peek() ~= '' do
-                leadingWhite = leadingWhite .. get()
-            end
-            token = { 
-                Type = 'Comment', 
-                CommentType = 'Shebang', 
-                Data = leadingWhite, 
-                Line = line, 
-                Char = char 
-            }
-            token.Print = function()
-                return "<"..(token.Type .. string.rep(' ', 7-#token.Type)).."  "..(token.Data or '').." >"
-            end
-            
-            table.insert(tokens, token)
-        end
-
 		--main token emitting loop
 		while true do
 			--get leading whitespace. The leading whitespace will include any comments 
 			--preceding the token. This prevents the parser needing to deal with comments 
 			--separately.
+            leading = { }
 			local leadingWhite = ''
             local longStr = false
 			while true do
 				local c = peek()
+                if c == '#' and peek(1) == '!' and line == 1 then 
+                    -- #! shebang for linux scripts
+                    get()
+                    get()
+                    leadingWhite = "#!"
+                    while peek() ~= '\n' and peek() ~= '' do
+                        leadingWhite = leadingWhite .. get()
+                    end
+                    token = { 
+                        Type = 'Comment', 
+                        CommentType = 'Shebang', 
+                        Data = leadingWhite, 
+                        Line = line, 
+                        Char = char 
+                    }
+                    token.Print = function()
+                        return "<"..(token.Type .. string.rep(' ', 7-#token.Type)).."  "..(token.Data or '').." >"
+                    end
+                    
+                    table.insert(leading, token)
+                end
 				if c == ' ' or c == '\t' then
 					--whitespace
 					--leadingWhite = leadingWhite..get()
-                    get() -- ignore whitespace
+                    local c2 = get() -- ignore whitespace
+                    table.insert(leading, { Type = 'Whitespace', Line = line, Char = char, Data = c2 })
                 elseif c == '\n' or c == '\r' then
-                    get()
+                    local nl = get()
                     if leadingWhite ~= "" then
                         local token = {
                             Type = 'Comment', 
@@ -201,9 +201,10 @@ function LexLua(src)
                         token.Print = function()
                             return "<"..(token.Type .. string.rep(' ', 7-#token.Type)).."  "..(token.Data or '').." >"
                         end
-                        table.insert(tokens, token)
+                        table.insert(leading, token)
                         leadingWhite = ""
                     end
+                    table.insert(leading, { Type = 'Whitespace', Line = line, Char = char, Data = nl })
 				elseif c == '-' and peek(1) == '-' then
 					--comment
 					get()
@@ -233,7 +234,7 @@ function LexLua(src)
                 token.Print = function()
                     return "<"..(token.Type .. string.rep(' ', 7-#token.Type)).."  "..(token.Data or '').." >"
                 end
-                table.insert(tokens, token)
+                table.insert(leading, token)
             end
 
 			--get the initial char
@@ -360,8 +361,7 @@ function LexLua(src)
 			end
 
 			--add the emitted symbol, after adding some common data
-			-- No longer necessary : leading white
-            --toEmit.LeadingWhite = leadingWhite
+            toEmit.LeadingWhite = leading -- table of leading whitespace/comments
 			toEmit.Line = thisLine
 			toEmit.Char = thisChar
 			toEmit.Print = function()
@@ -920,15 +920,7 @@ function ParseLua(src)
 	local function ParseStatement(scope)
 		local stat = nil
 		--print(tok.Peek().Print())
-        
-        if tok:Peek().Type == 'Comment' then
-            local t = tok:Get()
-            stat = { 
-                AstType = 'Comment',
-                CommentType = t.CommentType,
-                Data = t.Data
-            }
-        elseif tok:ConsumeKeyword('if') then
+        if tok:ConsumeKeyword('if') then
 			--setup
 			local nodeIfStat = {}
 			nodeIfStat.AstType = 'IfStatement'

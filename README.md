@@ -32,6 +32,7 @@ Then copy the `RobloxPlugin` folder from the source into your Roblox Plugins dir
 Features/Todo
 -------------
 Features:
+
     - Lua scanner/parser, which generates a full AST (See TODO 1 and 2)
     - Lua reconstructor
         - minimal
@@ -40,6 +41,7 @@ Features:
     - support for embedded long strings/comments e.g. [[abc [[ def ]] ghi]]
 
 Todo:
+
     - Comment parsing needs fixed. It works in place of statements. Works: "function a() -- main function" Doesn't work: "for i = 1, --[[2]] 3 do"
     - Preserve whitespace into AST as AstNode Type 'WhiteSpace'
     - use table.concat instead of appends in the reconstructors
