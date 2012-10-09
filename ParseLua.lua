@@ -3,23 +3,23 @@
 -- ParseLua.lua
 --
 -- The main lua parser and lexer.
--- LexLua returns a Lua token stream, with tokens that preserve 
+-- LexLua returns a Lua token stream, with tokens that preserve
 -- all whitespace formatting information.
 -- ParseLua returns an AST, internally relying on LexLua.
 --
 
 require'Util'
- 
+
 local WhiteChars = lookupify{' ', '\n', '\t', '\r'}
 local EscapeLookup = {['\r'] = '\\r', ['\n'] = '\\n', ['\t'] = '\\t', ['"'] = '\\"', ["'"] = "\\'"}
-local LowerChars = lookupify{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 
-							 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 
+local LowerChars = lookupify{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
+							 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
 							 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'}
-local UpperChars = lookupify{'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 
-							 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 
+local UpperChars = lookupify{'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
+							 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R',
 							 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'}
 local Digits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
-local HexDigits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
+local HexDigits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
                             'A', 'a', 'B', 'b', 'C', 'c', 'D', 'd', 'E', 'e', 'F', 'f'}
 
 local Symbols = lookupify{'+', '-', '*', '/', '^', '%', ',', '{', '}', '[', ']', '(', ')', ';', '#'}
@@ -40,7 +40,7 @@ function LexLua(src)
 		local p = 1
 		local line = 1
 		local char = 1
-		
+
 		--get / peek functions
 		local function get()
 			local c = src:sub(p,p)
@@ -94,7 +94,7 @@ function LexLua(src)
 						if peek() == ']' then
 							for i = 1, equalsCount do
 								if peek(i) ~= '=' then foundEnd = false end
-							end 
+							end
 							if peek(equalsCount+1) ~= ']' then
 								foundEnd = false
 							end
@@ -103,9 +103,9 @@ function LexLua(src)
                                 -- is there an embedded long string?
                                 local embedded = true
                                 for i = 1, equalsCount do
-                                    if peek(i) ~= '=' then 
-                                        embedded = false 
-                                        break 
+                                    if peek(i) ~= '=' then
+                                        embedded = false
+                                        break
                                     end
                                 end
                                 if peek(equalsCount + 1) == '[' and embedded then
@@ -121,8 +121,8 @@ function LexLua(src)
 						--
 						if foundEnd then
 							depth = depth - 1
-                            if depth == 0 then 
-                                break 
+                            if depth == 0 then
+                                break
                             else
                                 for i = 1, equalsCount + 2 do
                                     get()
@@ -151,18 +151,18 @@ function LexLua(src)
 				return nil
 			end
 		end
-        
+
 		--main token emitting loop
 		while true do
-			--get leading whitespace. The leading whitespace will include any comments 
-			--preceding the token. This prevents the parser needing to deal with comments 
+			--get leading whitespace. The leading whitespace will include any comments
+			--preceding the token. This prevents the parser needing to deal with comments
 			--separately.
             leading = { }
 			local leadingWhite = ''
             local longStr = false
 			while true do
 				local c = peek()
-                if c == '#' and peek(1) == '!' and line == 1 then 
+                if c == '#' and peek(1) == '!' and line == 1 then
                     -- #! shebang for linux scripts
                     get()
                     get()
@@ -170,12 +170,12 @@ function LexLua(src)
                     while peek() ~= '\n' and peek() ~= '' do
                         leadingWhite = leadingWhite .. get()
                     end
-                    token = { 
-                        Type = 'Comment', 
-                        CommentType = 'Shebang', 
-                        Data = leadingWhite, 
-                        Line = line, 
-                        Char = char 
+                    token = {
+                        Type = 'Comment',
+                        CommentType = 'Shebang',
+                        Data = leadingWhite,
+                        Line = line,
+                        Char = char
                     }
                     token.Print = function()
                         return "<"..(token.Type .. string.rep(' ', 7-#token.Type)).."  "..(token.Data or '').." >"
@@ -192,10 +192,10 @@ function LexLua(src)
                     local nl = get()
                     if leadingWhite ~= "" then
                         local token = {
-                            Type = 'Comment', 
-                            CommentType = longStr and 'LongComment' or 'Comment', 
-                            Data = leadingWhite, 
-                            Line = line, 
+                            Type = 'Comment',
+                            CommentType = longStr and 'LongComment' or 'Comment',
+                            Data = leadingWhite,
+                            Line = line,
                             Char = char,
                         }
                         token.Print = function()
@@ -225,10 +225,10 @@ function LexLua(src)
 			end
             if leadingWhite ~= "" then
                 local token = {
-                    Type = 'Comment', 
-                    CommentType = longStr and 'LongComment' or 'Comment', 
-                    Data = leadingWhite, 
-                    Line = line, 
+                    Type = 'Comment',
+                    CommentType = longStr and 'LongComment' or 'Comment',
+                    Data = leadingWhite,
+                    Line = line,
                     Char = char,
                 }
                 token.Print = function()
@@ -265,7 +265,7 @@ function LexLua(src)
 					toEmit = {Type = 'Ident', Data = dat}
 				end
 
-			elseif Digits[c] or (peek() == '.' and Digits[peek(1)]) then 
+			elseif Digits[c] or (peek() == '.' and Digits[peek(1)]) then
 				--number const
 				local start = p
 				if c == '0' and peek(1) == 'x' then
@@ -362,6 +362,10 @@ function LexLua(src)
 
 			--add the emitted symbol, after adding some common data
             toEmit.LeadingWhite = leading -- table of leading whitespace/comments
+			--for k, tok in pairs(leading) do
+			--	tokens[#tokens + 1] = tok
+			--end
+
 			toEmit.Line = thisLine
 			toEmit.Char = thisChar
 			toEmit.Print = function()
@@ -474,13 +478,13 @@ function ParseLua(src)
 				err = err..">> `"..line:gsub('\t','    ').."`\n"
 				for i = 1, tok:Peek().Char do
 					local c = line:sub(i,i)
-					if c == '\t' then 
+					if c == '\t' then
 						err = err..'    '
 					else
 						err = err..' '
 					end
 				end
-				err = err.."   ^---"
+				err = err.."   ^^^^"
 				break
 			end
 		end
@@ -495,11 +499,11 @@ function ParseLua(src)
 		scope.Parent = parent
 		scope.LocalList = {}
 		scope.LocalMap = {}
-        
+
 		function scope:ObfuscateVariables()
 			for _, var in pairs(scope.LocalList) do
 				local id
-				VarUid = 0 
+				VarUid = 0
 				repeat
 					VarUid = VarUid + 1
 					local varToUse = VarUid
@@ -514,11 +518,11 @@ function ParseLua(src)
 				scope.LocalMap[id] = var
 			end
 		end
-        
-        -- Renames a variable from this scope and down. 
-        -- Does not rename global variables. 
+
+        -- Renames a variable from this scope and down.
+        -- Does not rename global variables.
         function scope:RenameVariable(old, newName)
-            if type(old) == "table" then
+            if type(old) == "table" then -- its (theoretically) an AstNode variable
                 old = old.Name
             end
             for _, var in pairs(scope.LocalList) do
@@ -528,9 +532,9 @@ function ParseLua(src)
                 end
             end
         end
-        
+
 		function scope:GetLocal(name)
-			--first, try to get my variable 
+			--first, try to get my variable
 			local my = scope.LocalMap[name]
 			if my then return my end
 
@@ -542,7 +546,7 @@ function ParseLua(src)
 
 			return nil
 		end
-        
+
 		function scope:CreateLocal(name)
 			--create my own var
 			local my = {}
@@ -555,13 +559,20 @@ function ParseLua(src)
 			--
 			return my
 		end
-        
+
 		scope.Print = function() return "<Scope>" end
 		return scope
 	end
 
 	local ParseExpr;
 	local ParseStatementList;
+
+	local function getWSAndComments()
+		while tok:Peek().Type == "Whitespace" and tok:Peek().Type == "Comment" do
+			tok:Get()
+		end
+		--tok:Get()
+	end
 
 	local function ParseFunctionArgsAndBody(scope)
 		local funcScope = CreateScope(scope)
@@ -602,7 +613,6 @@ function ParseLua(src)
 		if not tok:ConsumeKeyword('end') then
 			return false, GenerateError("`end` expected after function body")
 		end
-
 		local nodeFunc = {}
 		nodeFunc.AstType = 'Function'
 		nodeFunc.Scope = funcScope
@@ -765,7 +775,7 @@ function ParseLua(src)
 					--key
 					tok:Get()
 					local st, key = ParseExpr(scope)
-					if not st then 
+					if not st then
 						return false, GenerateError("Key Expression Expected")
 					end
 					if not tok:ConsumeSymbol(']') then
@@ -789,7 +799,7 @@ function ParseLua(src)
 					local lookahead = tok:Peek(1)
 					if lookahead.Type == 'Symbol' and lookahead.Data == '=' then
 						--we are a key
-						local key = tok:Get() 
+						local key = tok:Get()
 						if not tok:ConsumeSymbol('=') then
 							return false, GenerateError("`=` Expected")
 						end
@@ -800,7 +810,7 @@ function ParseLua(src)
 						v.EntryList[#v.EntryList+1] = {
 							Type = 'KeyString';
 							Key = key.Data;
-							Value = value; 
+							Value = value;
 						}
 
 					else
@@ -868,7 +878,7 @@ function ParseLua(src)
 		['<='] = {3,3};
 		['~='] = {3,3};
 		['>'] = {3,3};
-		['>='] = {3,3};		
+		['>='] = {3,3};
 		['and'] = {2,2};
 		['or'] = {1,1};
 	}
@@ -920,6 +930,7 @@ function ParseLua(src)
 	local function ParseStatement(scope)
 		local stat = nil
 		--print(tok.Peek().Print())
+getWSAndComments()
         if tok:ConsumeKeyword('if') then
 			--setup
 			local nodeIfStat = {}
@@ -1149,9 +1160,9 @@ function ParseLua(src)
 				if not tok:Is('Ident') then
 					return false, GenerateError("Function name expected")
 				end
-				local name = tok:Get().Data		
+				local name = tok:Get().Data
 				local localVar = scope:CreateLocal(name)
-				--	
+				--
 				local st, func = ParseFunctionArgsAndBody(scope)
 				if not st then return false, func end
 				--
@@ -1161,7 +1172,7 @@ function ParseLua(src)
 
 			else
 				return false, GenerateError("local var or function def expected")
-			end 
+			end
 
 		elseif tok:ConsumeSymbol('::') then
 			if not tok:Is('Ident') then
@@ -1180,7 +1191,7 @@ function ParseLua(src)
 			local exList = {}
 			if not tok:IsKeyword('end') then
 				local st, firstEx = ParseExpr(scope)
-				if st then 
+				if st then
 					exList[1] = firstEx
 					while tok:ConsumeSymbol(',') do
 						local st, ex = ParseExpr(scope)
@@ -1253,9 +1264,9 @@ function ParseLua(src)
 				nodeAssign.Rhs = rhs
 				stat = nodeAssign
 
-			elseif suffixed.AstType == 'CallExpr' or 
-			       suffixed.AstType == 'TableCallExpr' or 
-			       suffixed.AstType == 'StringCallExpr' 
+			elseif suffixed.AstType == 'CallExpr' or
+			       suffixed.AstType == 'TableCallExpr' or
+			       suffixed.AstType == 'StringCallExpr'
 			then
 				--it's a call statement
 				local nodeCall = {}
@@ -1273,6 +1284,7 @@ function ParseLua(src)
 
 
 	local statListCloseKeywords = lookupify{'end', 'else', 'elseif', 'until'}
+
 	ParseStatementList = function(scope)
 		local nodeStatlist = {}
 		nodeStatlist.Scope = CreateScope(scope)

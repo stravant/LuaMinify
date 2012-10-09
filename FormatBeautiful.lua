@@ -82,7 +82,7 @@ function Format_Beautify(ast)
 			out = joinStatementsSafe(out, formatExpr(expr.Rhs))
 
 		elseif expr.AstType == 'UnopExpr' then
-			out = joinStatementsSafe(out, expr.Op .. " ")
+			out = joinStatementsSafe(out, expr.Op) .. (#expr.Op ~= 1 and " " or "")
 			out = joinStatementsSafe(out, formatExpr(expr.Rhs))
 
 		elseif expr.AstType == 'DotsExpr' then
