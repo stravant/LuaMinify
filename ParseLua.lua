@@ -1211,7 +1211,7 @@ getWSAndComments()
 			nodeBreak.AstType = 'BreakStatement'
 			stat = nodeBreak
 
-		elseif tok:IsKeyword('goto') then
+		elseif tok:ConsumeKeyword('goto') then
 			if not tok:Is('Ident') then
 				return false, GenerateError("Label expected")
 			end
