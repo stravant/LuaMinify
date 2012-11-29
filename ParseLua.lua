@@ -575,6 +575,11 @@ function ParseLua(src)
 	end
 
 	local function ParseFunctionArgsAndBody(scope)
+        local ParseSimpleExpr, 
+            ParseSubExpr,
+            ParsePrimaryExpr,
+            ParseSuffixedExpr
+    
 		local funcScope = CreateScope(scope)
 		if not tok:ConsumeSymbol('(') then
 			return false, GenerateError("`(` expected.")
@@ -624,7 +629,7 @@ function ParseLua(src)
 	end
 
 
-	local function ParsePrimaryExpr(scope)
+	function ParsePrimaryExpr(scope)
 		if tok:ConsumeSymbol('(') then
 			local st, ex = ParseExpr(scope)
 			if not st then return false, ex end
@@ -653,8 +658,7 @@ function ParseLua(src)
 		end
 	end
 
-
-	local function ParseSuffixedExpr(scope, onlyDotColon)
+	function ParseSuffixedExpr(scope, onlyDotColon)
 		--base primary expression
 		local st, prim = ParsePrimaryExpr(scope)
 		if not st then return false, prim end
@@ -719,12 +723,14 @@ function ParseLua(src)
 
 			elseif not onlyDotColon and tok:IsSymbol('{') then
 				--table call
-				local st, ex = ParseExpr(scope)
+				local st, ex = ParseSimpleExpr(scope)
+                -- FIX: ParseExpr(scope) parses the table AND and any following binary expressions.
+                -- We just want the table
 				if not st then return false, ex end
 				local nodeCall = {}
 				nodeCall.AstType = 'TableCallExpr'
 				nodeCall.Base = prim
-				nodeCall.Arguments = {ex}
+				nodeCall.Arguments = { ex }
 				--
 				prim = nodeCall
 
@@ -736,7 +742,7 @@ function ParseLua(src)
 	end
 
 
-	local function ParseSimpleExpr(scope)
+	function ParseSimpleExpr(scope)
 		if tok:Is('Number') then
 			local nodeNum = {}
 			nodeNum.AstType = 'NumberExpr'
@@ -882,7 +888,7 @@ function ParseLua(src)
 		['and'] = {2,2};
 		['or'] = {1,1};
 	}
-	local function ParseSubExpr(scope, level)
+	function ParseSubExpr(scope, level)
 		--base item, possibly with unop prefix
 		local st, exp
 		if unops[tok:Peek().Data] then
