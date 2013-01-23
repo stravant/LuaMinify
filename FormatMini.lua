@@ -117,7 +117,7 @@ function Format_Mini(ast)
 			out = out..formatExpr(expr.Base)..expr.Indexer..expr.Ident.Data
 
 		elseif expr.AstType == 'Function' then
-			expr.Scope:RenameVars()
+			expr.Scope:ObfuscateVariables()
 			out = out.."function("
 			if #expr.Arguments > 0 then
 				for i = 1, #expr.Arguments do
@@ -245,7 +245,7 @@ function Format_Mini(ast)
 			out = joinStatementsSafe(out, formatExpr(statement.Condition))
 
 		elseif statement.AstType == 'Function' then
-			statement.Scope:RenameVars()
+			statement.Scope:ObfuscateVariables()
 			if statement.IsLocal then
 				out = "local"
 			end
@@ -274,7 +274,7 @@ function Format_Mini(ast)
 			out = joinStatementsSafe(out, "end")
 
 		elseif statement.AstType == 'GenericForStatement' then
-			statement.Scope:RenameVars()
+			statement.Scope:ObfuscateVariables()
 			out = "for "
 			for i = 1, #statement.VariableList do
 				out = out..statement.VariableList[i].Name
@@ -318,14 +318,14 @@ function Format_Mini(ast)
 
 	formatStatlist = function(statList)
 		local out = ''
-		statList.Scope:RenameVars()
+		statList.Scope:ObfuscateVariables()
 		for _, stat in pairs(statList.Body) do
 			out = joinStatementsSafe(out, formatStatement(stat), ';')
 		end
 		return out
 	end
 
-	ast.Scope:RenameVars()
+	ast.Scope:ObfuscateVariables()
 	return formatStatlist(ast)
 end
 

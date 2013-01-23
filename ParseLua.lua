@@ -385,7 +385,19 @@ function LexLua(src)
 	local tok = {}
 	local savedP = {}
 	local p = 1
-
+    
+    function tok:getp()
+        return p
+    end
+    
+    function tok:setp(n)
+        p = n
+    end
+    
+    function tok:getTokenList()
+        return tokens
+    end
+    
 	--getters
 	function tok:Peek(n)
 		n = n or 0
@@ -462,7 +474,12 @@ end
 
 
 function ParseLua(src)
-	local st, tok = LexLua(src)
+	local st, tok
+    if type(src) ~= 'table' then
+        st, tok = LexLua(src)
+    else
+        st, tok = true, src
+    end
 	if not st then
 		return false, tok
 	end
@@ -471,23 +488,25 @@ function ParseLua(src)
 		local err = ">> :"..tok:Peek().Line..":"..tok:Peek().Char..": "..msg.."\n"
 		--find the line
 		local lineNum = 0
-		for line in src:gmatch("[^\n]*\n?") do
-			if line:sub(-1,-1) == '\n' then line = line:sub(1,-2) end
-			lineNum = lineNum+1
-			if lineNum == tok:Peek().Line then
-				err = err..">> `"..line:gsub('\t','    ').."`\n"
-				for i = 1, tok:Peek().Char do
-					local c = line:sub(i,i)
-					if c == '\t' then
-						err = err..'    '
-					else
-						err = err..' '
-					end
-				end
-				err = err.."   ^^^^"
-				break
-			end
-		end
+        if type(src) == 'string' then
+            for line in src:gmatch("[^\n]*\n?") do
+                if line:sub(-1,-1) == '\n' then line = line:sub(1,-2) end
+                lineNum = lineNum+1
+                if lineNum == tok:Peek().Line then
+                    err = err..">> `"..line:gsub('\t','    ').."`\n"
+                    for i = 1, tok:Peek().Char do
+                        local c = line:sub(i,i)
+                        if c == '\t' then
+                            err = err..'    '
+                        else
+                            err = err..' '
+                        end
+                    end
+                    err = err.."   ^^^^"
+                    break
+                end
+            end
+        end
 		return err
 	end
 	--
@@ -502,17 +521,16 @@ function ParseLua(src)
 
 		function scope:ObfuscateVariables()
 			for _, var in pairs(scope.LocalList) do
-				local id
-				VarUid = 0
+				local id = ""
 				repeat
-					VarUid = VarUid + 1
-					local varToUse = VarUid
-					id = ''
-					while varToUse > 0 do
-						local d = varToUse % #VarDigits
-						varToUse = (varToUse - d) / #VarDigits
-						id = id..VarDigits[d+1]
-					end
+					local chars = "QWERTYUIOPASDFGHJKLZXCVBNMqwertyuioplkjhgfdsazxcvbnm_"
+                    local chars2 = "QWERTYUIOPASDFGHJKLZXCVBNMqwertyuioplkjhgfdsazxcvbnm_1234567890"
+                    local n = math.random(1, #chars)
+                    id = id .. chars:sub(n, n)
+                    for i = 1, math.random(0,20) do
+                        local n = math.random(1, #chars2)
+                        id = id .. chars2:sub(n, n)
+                    end
 				until not GlobalVarGetMap[id] and not parent:GetLocal(id) and not scope.LocalMap[id]
 				var.Name = id
 				scope.LocalMap[id] = var
@@ -1106,7 +1124,7 @@ getWSAndComments()
 				return false, GenerateError("`until` expected.")
 			end
 			--
-			local st, cond = ParseExpr(scope)
+			local st, cond = ParseExpr(body.Scope)
 			if not st then return false, cond end
 			--
 			local nodeRepeat = {}
