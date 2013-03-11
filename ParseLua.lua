@@ -536,6 +536,8 @@ function ParseLua(src)
 				scope.LocalMap[id] = var
 			end
 		end
+        
+        scope.RenameVars = scope.ObfuscateVariables
 
         -- Renames a variable from this scope and down.
         -- Does not rename global variables.
@@ -582,22 +584,14 @@ function ParseLua(src)
 		return scope
 	end
 
-	local ParseExpr;
-	local ParseStatementList;
-
-	local function getWSAndComments()
-		while tok:Peek().Type == "Whitespace" and tok:Peek().Type == "Comment" do
-			tok:Get()
-		end
-		--tok:Get()
-	end
-
-	local function ParseFunctionArgsAndBody(scope)
-        local ParseSimpleExpr, 
+	local ParseExpr
+	local ParseStatementList
+    local ParseSimpleExpr, 
             ParseSubExpr,
             ParsePrimaryExpr,
             ParseSuffixedExpr
-    
+
+	local function ParseFunctionArgsAndBody(scope)
 		local funcScope = CreateScope(scope)
 		if not tok:ConsumeSymbol('(') then
 			return false, GenerateError("`(` expected.")
@@ -953,8 +947,6 @@ function ParseLua(src)
 
 	local function ParseStatement(scope)
 		local stat = nil
-		--print(tok.Peek().Print())
-getWSAndComments()
         if tok:ConsumeKeyword('if') then
 			--setup
 			local nodeIfStat = {}
@@ -1123,7 +1115,8 @@ getWSAndComments()
 			if not tok:ConsumeKeyword('until') then
 				return false, GenerateError("`until` expected.")
 			end
-			--
+			-- FIX: Used to parse in parent scope
+            -- Now parses in repeat scope
 			local st, cond = ParseExpr(body.Scope)
 			if not st then return false, cond end
 			--
