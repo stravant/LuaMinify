@@ -1,5 +1,8 @@
 
-require'ParseLua'
+local parser = require'ParseLua'
+local ParseLua = parser.ParseLua
+local util = require'Util'
+local lookupify = util.lookupify
 
 --
 -- FormatMini.lua
@@ -17,7 +20,7 @@ local UpperChars = lookupify{'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
 							 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'}
 local Digits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 
-function Format_Mini(ast)
+local function Format_Mini(ast)
 	local formatStatlist, formatExpr;
 	local count = 0
 	--
@@ -329,3 +332,4 @@ function Format_Mini(ast)
 	return formatStatlist(ast)
 end
 
+return Format_Mini

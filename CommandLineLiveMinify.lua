@@ -6,8 +6,11 @@
 -- correctness of their implementation.
 --
 
-require'Util'
-require'FormatMini'
+local util = require'Util'
+local Parser = require'ParseLua'
+local Format_Mini = require'FormatMini'
+local ParseLua = Parser.ParseLua
+local PrintTable = util.PrintTable
 
 while true do
 	io.write('> ')

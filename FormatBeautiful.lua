@@ -4,7 +4,10 @@
 -- Returns a beautified version of the code, including comments
 --
 
-require"ParseLua"
+local parser = require"ParseLua"
+local ParseLua = parser.ParseLua
+local util = require'Util'
+local lookupify = util.lookupify
 
 local LowerChars = lookupify{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 
 							 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 
@@ -14,7 +17,7 @@ local UpperChars = lookupify{'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
 							 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'}
 local Digits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 
-function Format_Beautify(ast)
+local function Format_Beautify(ast)
 	local formatStatlist, formatExpr
     local indent = 0
 	local EOL = "\n"
@@ -336,3 +339,4 @@ function Format_Beautify(ast)
 	return formatStatlist(ast)
 end
 
+return Format_Beautify

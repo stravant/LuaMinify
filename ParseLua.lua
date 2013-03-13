@@ -8,7 +8,8 @@
 -- ParseLua returns an AST, internally relying on LexLua.
 --
 
-require'Util'
+local util = require'Util'
+local lookupify = util.lookupify
 
 local WhiteChars = lookupify{' ', '\n', '\t', '\r'}
 local EscapeLookup = {['\r'] = '\\r', ['\n'] = '\\n', ['\t'] = '\\t', ['"'] = '\\"', ["'"] = "\\'"}
@@ -31,7 +32,7 @@ local Keywords = lookupify{
     'return', 'then', 'true', 'until', 'while',
 };
 
-function LexLua(src)
+local function LexLua(src)
 	--token dump
 	local tokens = {}
 
@@ -473,7 +474,7 @@ function LexLua(src)
 end
 
 
-function ParseLua(src)
+local function ParseLua(src)
 	local st, tok
     if type(src) ~= 'table' then
         st, tok = LexLua(src)
@@ -1331,3 +1332,5 @@ function ParseLua(src)
 	--print("Last Token: "..PrintTable(tok:Peek()))
 	return st, main
 end
+
+return { LexLua = LexLua, ParseLua = ParseLua }
