@@ -64,8 +64,8 @@ local function Format_Mini(ast)
 	formatExpr = function(expr)
 		local out = string.rep('(', expr.ParenCount or 0)
 		if expr.AstType == 'VarExpr' then
-			if expr.Local then
-				out = out..expr.Local.Name
+			if expr.Variable then
+				out = out..expr.Variable.Name
 			else
 				out = out..expr.Name
 			end

@@ -24,6 +24,7 @@ local HexDigits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
                             'A', 'a', 'B', 'b', 'C', 'c', 'D', 'd', 'E', 'e', 'F', 'f'}
 
 local Symbols = lookupify{'+', '-', '*', '/', '^', '%', ',', '{', '}', '[', ']', '(', ')', ';', '#'}
+local Scope = require'Scope'
 
 local Keywords = lookupify{
     'and', 'break', 'do', 'else', 'elseif',
@@ -512,9 +513,10 @@ local function ParseLua(src)
 	end
 	--
 	local VarUid = 0
-	local GlobalVarGetMap = {}
+	-- No longer needed: handled in Scopes now local GlobalVarGetMap = {} 
 	local VarDigits = {'_', 'a', 'b', 'c', 'd'}
 	local function CreateScope(parent)
+        --[[
 		local scope = {}
 		scope.Parent = parent
 		scope.LocalList = {}
@@ -579,8 +581,10 @@ local function ParseLua(src)
 			scope.LocalMap[name] = my
 			--
 			return my
-		end
-
+		end]]
+        local scope = Scope:new(parent)
+        scope.RenameVars = scope.ObfuscateLocals
+        scope.ObfuscateVariables = scope.ObfuscateLocals
 		scope.Print = function() return "<Scope>" end
 		return scope
 	end
@@ -657,13 +661,20 @@ local function ParseLua(src)
 			local id = tok:Get()
 			local var = scope:GetLocal(id.Data)
 			if not var then
-				GlobalVarGetMap[id.Data] = true
+                var = scope:GetGlobal(id.Data)
+                if not var then
+                    var = scope:CreateGlobal(id.Data)
+                else
+                    var.References = var.References + 1
+                end
+            else
+                var.References = var.References + 1
 			end
 			--
 			local nodePrimExp = {}
 			nodePrimExp.AstType = 'VarExpr'
 			nodePrimExp.Name = id.Data
-			nodePrimExp.Local = var
+			nodePrimExp.Variable = var
 			--
 			return true, nodePrimExp
 		else
