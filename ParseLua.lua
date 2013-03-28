@@ -923,6 +923,7 @@ local function ParseLua(src)
 			nodeEx.AstType = 'UnopExpr'
 			nodeEx.Rhs = exp
 			nodeEx.Op = op
+            nodeEx.OperatorPrecedence = unopprio
 			exp = nodeEx
 		else
 			st, exp = ParseSimpleExpr(scope)
@@ -940,6 +941,7 @@ local function ParseLua(src)
 				nodeEx.AstType = 'BinopExpr'
 				nodeEx.Lhs = exp
 				nodeEx.Op = op
+                nodeEx.OperatorPrecedence = prio[1]
 				nodeEx.Rhs = rhs
 				--
 				exp = nodeEx
