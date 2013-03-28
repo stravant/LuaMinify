@@ -1,5 +1,8 @@
 
-require'ParseLua'
+local parser = require'ParseLua'
+local ParseLua = parser.ParseLua
+local util = require'Util'
+local lookupify = util.lookupify
 
 --
 -- FormatMini.lua
@@ -16,12 +19,14 @@ local UpperChars = lookupify{'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
 							 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 
 							 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'}
 local Digits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
+local Symbols = lookupify{'+', '-', '*', '/', '^', '%', ',', '{', '}', '[', ']', '(', ')', ';', '#'}
 
-function Format_Mini(ast)
+local function Format_Mini(ast)
 	local formatStatlist, formatExpr;
 	local count = 0
 	--
 	local function joinStatementsSafe(a, b, sep)
+    --print(a, b)
 		if count > 150 then
 			count = 0
 			return a.."\n"..b
@@ -43,6 +48,8 @@ function Format_Mini(ast)
 			if bb == '(' then
 				--can join statements directly
 				return a..b
+            elseif Symbols[bb] then
+                return a .. b
 			else
 				return a..sep..b
 			end
@@ -53,16 +60,20 @@ function Format_Mini(ast)
 				--don't want to accidentally call last statement, can't join directly
 				return a..sep..b
 			else
+            --print("asdf", '"'..a..'"', '"'..b..'"')
 				return a..b
 			end
 		end
 	end
 
-	formatExpr = function(expr)
-		local out = string.rep('(', expr.ParenCount or 0)
+	formatExpr = function(expr, precedence)
+        local precedence = precedence or 0
+        local currentPrecedence = 0
+        local skipParens = false
+		local out = ""
 		if expr.AstType == 'VarExpr' then
-			if expr.Local then
-				out = out..expr.Local.Name
+			if expr.Variable then
+				out = out..expr.Variable.Name
 			else
 				out = out..expr.Name
 			end
@@ -80,10 +91,20 @@ function Format_Mini(ast)
 			out = joinStatementsSafe(out, "nil")
 
 		elseif expr.AstType == 'BinopExpr' then
-			out = joinStatementsSafe(out, formatExpr(expr.Lhs))
+            currentPrecedence = expr.OperatorPrecedence
+			out = joinStatementsSafe(out, formatExpr(expr.Lhs, currentPrecedence))
 			out = joinStatementsSafe(out, expr.Op)
-			out = joinStatementsSafe(out, formatExpr(expr.Rhs))
-
+            out = joinStatementsSafe(out, formatExpr(expr.Rhs))
+            if expr.Op == '^' or expr.Op == '..' then
+                currentPrecedence = currentPrecedence - 1
+            end
+            
+            if currentPrecedence < precedence then
+                skipParens = false
+            else
+                skipParens = true
+            end
+            --print(skipParens, precedence, currentPrecedence)
 		elseif expr.AstType == 'UnopExpr' then
 			out = joinStatementsSafe(out, expr.Op)
 			out = joinStatementsSafe(out, formatExpr(expr.Rhs))
@@ -153,9 +174,15 @@ function Format_Mini(ast)
 			out = out.."}"
 
 		end
-		out = out..string.rep(')', expr.ParenCount or 0)
+        --print(">>", skipParens, expr.ParenCount, out)
+        if not skipParens then
+            --print("hehe")
+            out = string.rep('(', expr.ParenCount or 0) .. out
+            out = out .. string.rep(')', expr.ParenCount or 0)
+            --print("", out)
+        end
 		count = count + #out
-		return out
+		return --[[print(out) or]] out
 	end
 
 	local formatStatement = function(statement)
@@ -262,7 +289,7 @@ function Format_Mini(ast)
 					if i ~= #statement.Arguments then
 						out = out..","
 					elseif statement.VarArg then
-						print("Apply vararg")
+						--print("Apply vararg")
 						out = out..",..."
 					end
 				end
@@ -329,3 +356,4 @@ function Format_Mini(ast)
 	return formatStatlist(ast)
 end
 
+return Format_Mini

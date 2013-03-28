@@ -6,7 +6,11 @@
 -- correctness of their implementation.
 --
 
-require "FormatBeautiful"
+local util = require'Util'
+local Parser = require'ParseLua'
+local Format_Beautify = require'FormatBeautiful'
+local ParseLua = Parser.ParseLua
+local PrintTable = util.PrintTable
 
 while true do
 	io.write('> ')
