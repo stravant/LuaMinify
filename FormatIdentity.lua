@@ -10,7 +10,7 @@ require'ParseLua'
 -- an AST.
 --
 
-function Format_Identity(ast)
+local function Format_Identity(ast)
 	local formatStatlist, formatExpr;
 
 	formatExpr = function(expr)
@@ -108,3 +108,5 @@ function Format_Identity(ast)
 
 	return formatStatlist(ast)
 end
+
+return Format_Identity

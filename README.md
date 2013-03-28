@@ -33,16 +33,12 @@ Features/Todo
 -------------
 Features:
 
-    - Lua scanner/parser, which generates a full AST (See TODO 1 and 2)
+    - Lua scanner/parser, which generates a full AST
     - Lua reconstructor
         - minimal
-        - full reconstruction (TODO: options)
+        - full reconstruction (TODO: options, comments)
         - TODO: exact reconstructor
     - support for embedded long strings/comments e.g. [[abc [[ def ]] ghi]]
 
 Todo:
-
-    - Comment parsing needs fixed. It works in place of statements. Works: "function a() -- main function" Doesn't work: "for i = 1, --[[2]] 3 do"
-    - Preserve whitespace into AST as AstNode Type 'WhiteSpace'
     - use table.concat instead of appends in the reconstructors
-    - bytecode generator

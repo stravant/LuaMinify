@@ -4,7 +4,11 @@
 -- A command line utility for beautifying lua source code using the beautifier.
 --
 
-require "FormatBeautiful"
+local util = require'Util'
+local Parser = require'ParseLua'
+local Format_Beautify = require'FormatBeautiful'
+local ParseLua = Parser.ParseLua
+local PrintTable = util.PrintTable
 
 local function splitFilename(name)
 	--table.foreach(arg, print)

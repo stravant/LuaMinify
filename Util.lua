@@ -5,20 +5,20 @@
 -- Provides some common utilities shared throughout the project.
 --
 
-function lookupify(tb)
+local function lookupify(tb)
 	for _, v in pairs(tb) do
 		tb[v] = true
 	end
 	return tb
 end
 
-function CountTable(tb)
+local function CountTable(tb)
 	local c = 0
 	for _ in pairs(tb) do c = c + 1 end
 	return c
 end
 
-function PrintTable(tb, atIndent)
+local function PrintTable(tb, atIndent)
 	if tb.Print then
 		return tb.Print()
 	end
@@ -58,3 +58,5 @@ function PrintTable(tb, atIndent)
 	out = out..(useNewlines and string.rep('    ', atIndent) or '').."}"
 	return out
 end
+
+return { PrintTable = PrintTable, CountTable = CountTable, lookupify = lookupify }
