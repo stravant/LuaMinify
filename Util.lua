@@ -12,11 +12,13 @@ local function lookupify(tb)
 	return tb
 end
 
+
 local function CountTable(tb)
 	local c = 0
 	for _ in pairs(tb) do c = c + 1 end
 	return c
 end
+
 
 local function PrintTable(tb, atIndent)
 	if tb.Print then
@@ -28,6 +30,7 @@ local function PrintTable(tb, atIndent)
 	local out = "{"..(useNewlines and '\n' or '')
 	for k, v in pairs(tb) do
 		if type(v) ~= 'function' then
+		--do
 			out = out..(useNewlines and baseIndent or '')
 			if type(k) == 'number' then
 				--nothing to do
@@ -59,4 +62,30 @@ local function PrintTable(tb, atIndent)
 	return out
 end
 
-return { PrintTable = PrintTable, CountTable = CountTable, lookupify = lookupify }
+
+local function splitLines(str)
+	if str:match("\n") then
+		local lines = {}
+		for line in str:gmatch("[^\n]*") do 
+			table.insert(lines, line)
+		end
+		assert(#lines > 0)
+		return lines
+	else
+		return { str }
+	end
+end
+
+
+local function printf(fmt, ...)
+	return print(string.format(fmt, ...))
+end
+
+
+return {
+	PrintTable = PrintTable,
+	CountTable = CountTable,
+	lookupify  = lookupify,
+	splitLines = splitLines,
+	printf     = printf,
+}
