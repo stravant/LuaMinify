@@ -19,13 +19,13 @@ local Digits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 
 local function Format_Beautify(ast)
 	local formatStatlist, formatExpr
-    local indent = 0
+	local indent = 0
 	local EOL = "\n"
-    
-    local function getIndentation()
-        return string.rep("    ", indent)
-    end
-    
+	
+	local function getIndentation()
+		return string.rep("    ", indent)
+	end
+	
 	local function joinStatementsSafe(a, b, sep)
 		sep = sep or ''
 		local aa, bb = a:sub(-1,-1), b:sub(1,1)
@@ -117,7 +117,7 @@ local function Format_Beautify(ast)
 			out = out..formatExpr(expr.Base)..expr.Indexer..expr.Ident.Data
 
 		elseif expr.AstType == 'Function' then
-            -- anonymous function
+			-- anonymous function
 			out = out.."function("
 			if #expr.Arguments > 0 then
 				for i = 1, #expr.Arguments do
@@ -132,9 +132,9 @@ local function Format_Beautify(ast)
 				out = out.."..."
 			end
 			out = out..")" .. EOL
-            indent = indent + 1
+			indent = indent + 1
 			out = joinStatementsSafe(out, formatStatlist(expr.Body))
-            indent = indent - 1
+			indent = indent - 1
 			out = joinStatementsSafe(out, getIndentation() .. "end")
 		elseif expr.AstType == 'ConstructorExpr' then
 			out = out.."{ "
@@ -153,6 +153,9 @@ local function Format_Beautify(ast)
 			end
 			out = out.." }"
 
+		elseif expr.AstType == 'Parentheses' then
+			out = out.."("..formatExpr(expr.Inner)..")"
+
 		end
 		out = out..string.rep(')', expr.ParenCount or 0)
 		return out
@@ -161,7 +164,7 @@ local function Format_Beautify(ast)
 	local formatStatement = function(statement)
 		local out = ""
 		if statement.AstType == 'AssignmentStatement' then
-            out = getIndentation()
+			out = getIndentation()
 			for i = 1, #statement.Lhs do
 				out = out..formatExpr(statement.Lhs[i])
 				if i ~= #statement.Lhs then
@@ -199,9 +202,9 @@ local function Format_Beautify(ast)
 		elseif statement.AstType == 'IfStatement' then
 			out = getIndentation() .. joinStatementsSafe("if ", formatExpr(statement.Clauses[1].Condition))
 			out = joinStatementsSafe(out, " then") .. EOL
-            indent = indent + 1
-            out = joinStatementsSafe(out, formatStatlist(statement.Clauses[1].Body))
-            indent = indent - 1
+			indent = indent + 1
+			out = joinStatementsSafe(out, formatStatlist(statement.Clauses[1].Body))
+			indent = indent - 1
 			for i = 2, #statement.Clauses do
 				local st = statement.Clauses[i]
 				if st.Condition then
@@ -211,23 +214,23 @@ local function Format_Beautify(ast)
 				else
 					out = joinStatementsSafe(out, getIndentation() .. "else") .. EOL
 				end
-                indent = indent + 1
+				indent = indent + 1
 				out = joinStatementsSafe(out, formatStatlist(st.Body))
-                indent = indent - 1
+				indent = indent - 1
 			end
 			out = joinStatementsSafe(out, getIndentation() .. "end") .. EOL
 		elseif statement.AstType == 'WhileStatement' then
 			out = getIndentation() .. joinStatementsSafe("while ", formatExpr(statement.Condition))
 			out = joinStatementsSafe(out, " do") .. EOL
-            indent = indent + 1
+			indent = indent + 1
 			out = joinStatementsSafe(out, formatStatlist(statement.Body))
-            indent = indent - 1
+			indent = indent - 1
 			out = joinStatementsSafe(out, getIndentation() .. "end") .. EOL
 		elseif statement.AstType == 'DoStatement' then
 			out = getIndentation() .. joinStatementsSafe(out, "do") .. EOL
-            indent = indent + 1
+			indent = indent + 1
 			out = joinStatementsSafe(out, formatStatlist(statement.Body))
-            indent = indent - 1
+			indent = indent - 1
 			out = joinStatementsSafe(out, getIndentation() .. "end") .. EOL
 		elseif statement.AstType == 'ReturnStatement' then
 			out = getIndentation() .. "return "
@@ -241,9 +244,9 @@ local function Format_Beautify(ast)
 			out = getIndentation() .. "break"
 		elseif statement.AstType == 'RepeatStatement' then
 			out = getIndentation() .. "repeat" .. EOL
-            indent = indent + 1
+			indent = indent + 1
 			out = joinStatementsSafe(out, formatStatlist(statement.Body))
-            indent = indent - 1
+			indent = indent - 1
 			out = joinStatementsSafe(out, getIndentation() .. "until ")
 			out = joinStatementsSafe(out, formatExpr(statement.Condition)) .. EOL
 		elseif statement.AstType == 'Function' then
@@ -251,7 +254,7 @@ local function Format_Beautify(ast)
 				out = "local "
 			end
 			out = joinStatementsSafe(out, "function ")
-            out = getIndentation() .. out
+			out = getIndentation() .. out
 			if statement.IsLocal then
 				out = out..statement.Name.Name
 			else
@@ -271,9 +274,9 @@ local function Format_Beautify(ast)
 				out = out.."..."
 			end
 			out = out..")" .. EOL
-            indent = indent + 1
+			indent = indent + 1
 			out = joinStatementsSafe(out, formatStatlist(statement.Body))
-            indent = indent - 1
+			indent = indent - 1
 			out = joinStatementsSafe(out, getIndentation() .. "end") .. EOL
 		elseif statement.AstType == 'GenericForStatement' then
 			out = getIndentation() .. "for "
@@ -291,9 +294,9 @@ local function Format_Beautify(ast)
 				end
 			end
 			out = joinStatementsSafe(out, " do") .. EOL
-            indent = indent + 1
+			indent = indent + 1
 			out = joinStatementsSafe(out, formatStatlist(statement.Body))
-            indent = indent - 1
+			indent = indent - 1
 			out = joinStatementsSafe(out, getIndentation() .. "end") .. EOL
 		elseif statement.AstType == 'NumericForStatement' then
 			out = getIndentation() .. "for "
@@ -303,27 +306,29 @@ local function Format_Beautify(ast)
 				out = out..", "..formatExpr(statement.Step)
 			end
 			out = joinStatementsSafe(out, " do") .. EOL
-            indent = indent + 1
+			indent = indent + 1
 			out = joinStatementsSafe(out, formatStatlist(statement.Body))
-            indent = indent - 1
+			indent = indent - 1
 			out = joinStatementsSafe(out, getIndentation() .. "end") .. EOL
-        elseif statement.AstType == 'LabelStatement' then
-            out = getIndentation() .. "::" .. statement.Label .. "::" .. EOL
-        elseif statement.AstType == 'GotoStatement' then
-            out = getIndentation() .. "goto " .. statement.Label .. EOL
-        elseif statement.AstType == 'Comment' then
-            if statement.CommentType == 'Shebang' then
-                out = getIndentation() .. statement.Data
-                --out = out .. EOL
-            elseif statement.CommentType == 'Comment' then
-                out = getIndentation() .. statement.Data
-                --out = out .. EOL
-            elseif statement.CommentType == 'LongComment' then
-                out = getIndentation() .. statement.Data
-                --out = out .. EOL
-            end
-        else
-            print("Unknown AST Type: ", statement.AstType)
+		elseif statement.AstType == 'LabelStatement' then
+			out = getIndentation() .. "::" .. statement.Label .. "::" .. EOL
+		elseif statement.AstType == 'GotoStatement' then
+			out = getIndentation() .. "goto " .. statement.Label .. EOL
+		elseif statement.AstType == 'Comment' then
+			if statement.CommentType == 'Shebang' then
+				out = getIndentation() .. statement.Data
+				--out = out .. EOL
+			elseif statement.CommentType == 'Comment' then
+				out = getIndentation() .. statement.Data
+				--out = out .. EOL
+			elseif statement.CommentType == 'LongComment' then
+				out = getIndentation() .. statement.Data
+				--out = out .. EOL
+			end
+		elseif statement.AstType == 'Eof' then
+			-- Ignore
+		else
+			print("Unknown AST Type: ", statement.AstType)
 		end
 		return out
 	end
