@@ -1,4 +1,3 @@
-
 --
 -- MinifyToolbar.lua
 --
@@ -22,7 +21,7 @@ end)
 
 minifyButton.Click:connect(function()
 	for _, o in pairs(game.Selection:Get()) do
-		if o:IsA('Script') or o:IsA('LocalScript') then
+		if o:IsA('Script') then
 			--can't read linkedsource, bail out
 			if o.LinkedSource ~= '' then
 				Spawn(function()
