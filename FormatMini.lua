@@ -324,6 +324,7 @@ local function Format_Mini(ast)
 			out = joinStatementsSafe(out, "end")
 
 		elseif statement.AstType == 'NumericForStatement' then
+			statement.Scope:ObfuscateVariables()
 			out = "for "
 			out = out..statement.Variable.Name.."="
 			out = out..formatExpr(statement.Start)..","..formatExpr(statement.End)
