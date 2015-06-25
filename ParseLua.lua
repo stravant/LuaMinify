@@ -230,7 +230,7 @@ local function LexLua(src)
 			if leadingWhite ~= "" then
 				local token = {
 					Type = 'Comment',
-					CommentType = longStr and 'LongComment' or 'Com mnment',
+					CommentType = longStr and 'LongComment' or 'Comment',
 					Data = leadingWhite,
 					Line = line,
 					Char = char,
