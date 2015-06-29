@@ -1,3 +1,45 @@
+local used = {}
+
+local insert, char = table.insert, string.char
+
+local chars = {}
+for i = 97, 122 do
+	insert(chars, char(i))
+end
+for i = 65, 90 do
+	insert(chars, char(i))
+end
+
+local function GetUnique()
+	for x = 1, 52 do
+		local c = chars[x]
+		if not used[c] then
+			used[c] = true
+			return c
+		end
+	end
+	for x = 1, 52 do
+		for y = 1, 52 do
+			local c = chars[x]..chars[y]
+			if not used[c] then
+				used[c] = true
+				return c
+			end
+		end
+	end
+	for x = 1, 52 do
+		for y = 1, 52 do
+			for z = 1, 52 do
+				local c = chars[x]..chars[y]..chars[z]
+				if not used[c] then
+					used[c] = true
+					return c
+				end
+			end
+		end
+	end
+end
+
 local Scope = {
 	new = function(self, parent)
 		local s = {
@@ -172,24 +214,11 @@ local Scope = {
 	end,
 	
 	ObfuscateLocals = function(self, recommendedMaxLength, validNameChars)
-		recommendedMaxLength = recommendedMaxLength or 7
-		local chars = validNameChars or "QWERTYUIOPASDFGHJKLZXCVBNMqwertyuioplkjhgfdsazxcvbnm_"
-		local chars2 = validNameChars or "QWERTYUIOPASDFGHJKLZXCVBNMqwertyuioplkjhgfdsazxcvbnm_1234567890"
-		for _, var in pairs(self.Locals) do
-			local id = ""
-			local tries = 0
-			repeat
-				local n = math.random(1, #chars)
-				id = id .. chars:sub(n, n)
-				for i = 1, math.random(0, tries > 5 and 30 or recommendedMaxLength) do
-					local n = math.random(1, #chars2)
-					id = id .. chars2:sub(n, n)
-				end
-				tries = tries + 1
-			until not self:GetVariable(id)
+		for i, var in pairs(self.Locals) do
+			local id = GetUnique()
 			self:RenameLocal(var.Name, id)
 		end
-	end,
+	end
 }
 
 return Scope
