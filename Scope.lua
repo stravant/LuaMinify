@@ -17,7 +17,7 @@ local Scope = {
 	end,
 	
 	AddLocal = function(self, v)
-		table.insert(self.Locals, v)
+		table.insert(self.Locals, 1, v)
 	end,
 	
 	AddGlobal = function(self, v)
@@ -26,8 +26,6 @@ local Scope = {
 	
 	CreateLocal = function(self, name)
 		local v
-		v = self:GetLocal(name)
-		if v then return v end
 		v = { }
 		v.Scope = self
 		v.Name = name
