@@ -8,7 +8,7 @@
 -- ParseLua returns an AST, internally relying on LexLua.
 --
 
-require'Strict'
+require'strict'
 
 local util = require'Util'
 local lookupify = util.lookupify
