@@ -1,3 +1,52 @@
+local blacklist = {
+	["do"] = true,
+	["if"] = true,
+	["in"] = true,
+	["or"] = true,
+	["for"] = true,
+	["and"] = true,
+	["not"] = true,
+	["end"] = true,
+	["nil"] = true
+}
+
+local insert, char = table.insert, string.char
+
+local chars = {}
+for i = 97, 122 do
+	insert(chars, char(i))
+end
+for i = 65, 90 do
+	insert(chars, char(i))
+end
+
+local function GetUnique(self)
+	for x = 1, 52 do
+		local c = chars[x]
+		if not blacklist[c] and not self:GetVariable(c) then
+			return c
+		end
+	end
+	for x = 1, 52 do
+		for y = 1, 52 do
+			local c = chars[x]..chars[y]
+			if not blacklist[c] and not self:GetVariable(c) then
+				return c
+			end
+		end
+	end
+	for x = 1, 52 do
+		for y = 1, 52 do
+			for z = 1, 52 do
+				local c = chars[x]..chars[y]..chars[z]
+				if not blacklist[c] and not self:GetVariable(c) then
+					return c
+				end
+			end
+		end
+	end
+end
+
 local Scope = {
 	new = function(self, parent)
 		local s = {
@@ -8,22 +57,22 @@ local Scope = {
 			oldGlobalNamesMap = { },
 			Children = { },
 		}
-		
+
 		if parent then
 			table.insert(parent.Children, s)
 		end
-		
+
 		return setmetatable(s, { __index = self })
 	end,
-	
+
 	AddLocal = function(self, v)
 		table.insert(self.Locals, v)
 	end,
-	
+
 	AddGlobal = function(self, v)
 		table.insert(self.Globals, v)
 	end,
-	
+
 	CreateLocal = function(self, name)
 		local v
 		v = self:GetLocal(name)
@@ -37,43 +86,43 @@ local Scope = {
 		self:AddLocal(v)
 		return v
 	end,
-	
+
 	GetLocal = function(self, name)
 		for k, var in pairs(self.Locals) do
 			if var.Name == name then return var end
 		end
-		
+
 		if self.Parent then
 			return self.Parent:GetLocal(name)
 		end
 	end,
-	
+
 	GetOldLocal = function(self, name)
 		if self.oldLocalNamesMap[name] then
 			return self.oldLocalNamesMap[name]
 		end
 		return self:GetLocal(name)
 	end,
-	
+
 	mapLocal = function(self, name, var)
 		self.oldLocalNamesMap[name] = var
 	end,
-	
+
 	GetOldGlobal = function(self, name)
 		if self.oldGlobalNamesMap[name] then
 			return self.oldGlobalNamesMap[name]
 		end
 		return self:GetGlobal(name)
 	end,
-	
+
 	mapGlobal = function(self, name, var)
 		self.oldGlobalNamesMap[name] = var
 	end,
-	
+
 	GetOldVariable = function(self, name)
 		return self:GetOldLocal(name) or self:GetOldGlobal(name)
 	end,
-	
+
 	RenameLocal = function(self, oldName, newName)
 		oldName = type(oldName) == 'string' and oldName or oldName.Name
 		local found = false
@@ -87,7 +136,7 @@ local Scope = {
 			self.Parent:RenameLocal(oldName, newName)
 		end
 	end,
-	
+
 	RenameGlobal = function(self, oldName, newName)
 		oldName = type(oldName) == 'string' and oldName or oldName.Name
 		local found = false
@@ -101,7 +150,7 @@ local Scope = {
 			self.Parent:RenameGlobal(oldName, newName)
 		end
 	end,
-	
+
 	RenameVariable = function(self, oldName, newName)
 		oldName = type(oldName) == 'string' and oldName or oldName.Name
 		if self:GetLocal(oldName) then
@@ -110,7 +159,7 @@ local Scope = {
 			self:RenameGlobal(oldName, newName)
 		end
 	end,
-	
+
 	GetAllVariables = function(self)
 		local ret = self:getVars(true) -- down
 		for k, v in pairs(self:getVars(false)) do -- up
@@ -118,7 +167,7 @@ local Scope = {
 		end
 		return ret
 	end,
-	
+
 	getVars = function(self, top)
 		local ret = { }
 		if top then
@@ -142,7 +191,7 @@ local Scope = {
 		end
 		return ret
 	end,
-	
+
 	CreateGlobal = function(self, name)
 		local v
 		v = self:GetGlobal(name)
@@ -155,41 +204,28 @@ local Scope = {
 		v.References = 1
 		self:AddGlobal(v)
 		return v
-	end, 
-	
+	end,
+
 	GetGlobal = function(self, name)
 		for k, v in pairs(self.Globals) do
 			if v.Name == name then return v end
 		end
-		
+
 		if self.Parent then
 			return self.Parent:GetGlobal(name)
 		end
 	end,
-	
+
 	GetVariable = function(self, name)
 		return self:GetLocal(name) or self:GetGlobal(name)
 	end,
-	
+
 	ObfuscateLocals = function(self, recommendedMaxLength, validNameChars)
-		recommendedMaxLength = recommendedMaxLength or 7
-		local chars = validNameChars or "QWERTYUIOPASDFGHJKLZXCVBNMqwertyuioplkjhgfdsazxcvbnm_"
-		local chars2 = validNameChars or "QWERTYUIOPASDFGHJKLZXCVBNMqwertyuioplkjhgfdsazxcvbnm_1234567890"
-		for _, var in pairs(self.Locals) do
-			local id = ""
-			local tries = 0
-			repeat
-				local n = math.random(1, #chars)
-				id = id .. chars:sub(n, n)
-				for i = 1, math.random(0, tries > 5 and 30 or recommendedMaxLength) do
-					local n = math.random(1, #chars2)
-					id = id .. chars2:sub(n, n)
-				end
-				tries = tries + 1
-			until not self:GetVariable(id)
+		for i, var in pairs(self.Locals) do
+			local id = GetUnique(self)
 			self:RenameLocal(var.Name, id)
 		end
-	end,
+	end
 }
 
 return Scope
