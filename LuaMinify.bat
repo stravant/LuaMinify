@@ -1,2 +1,2 @@
 @echo off
-lua CommandLineMinify.lua %*
+lua "%~dp0CommandLineMinify.lua" %*

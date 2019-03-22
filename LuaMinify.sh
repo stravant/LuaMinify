@@ -1,2 +1,2 @@
 #!/bin/bash
-lua CommandLineMinify.lua $@
+lua "$(dirname "$0")/CommandLineMinify.lua" $@

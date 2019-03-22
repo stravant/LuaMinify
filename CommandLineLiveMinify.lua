@@ -6,6 +6,8 @@
 -- correctness of their implementation.
 --
 
+package.path = package.path..';'..string.gsub(arg[0], "(.*[/\\]).*", "%1")..'?.lua'
+
 local util = require'Util'
 local Parser = require'ParseLua'
 local Format_Mini = require'FormatMini'
