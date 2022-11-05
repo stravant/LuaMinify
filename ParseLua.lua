@@ -13,8 +13,6 @@ require'strict'
 local util = require'Util'
 local lookupify = util.Lookupify
 
-local WhiteChars = lookupify{' ', '\n', '\t', '\r'}
-local EscapeLookup = {['\r'] = '\\r', ['\n'] = '\\n', ['\t'] = '\\t', ['"'] = '\\"', ["'"] = "\\'"}
 local LowerChars = lookupify{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
 							 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
 							 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'}

@@ -1,9 +1,3 @@
-
-local parser = require'ParseLua'
-local ParseLua = parser.ParseLua
-local util = require'Util'
-local lookupify = util.Lookupify
-
 --
 -- FormatMini.lua
 --
@@ -11,6 +5,9 @@ local lookupify = util.Lookupify
 -- - All comments and whitespace are ignored
 -- - All local variables are renamed
 --
+
+local util = require'Util'
+local lookupify = util.Lookupify
 
 local LowerChars = lookupify{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 
 							 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 

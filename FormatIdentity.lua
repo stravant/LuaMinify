@@ -1,13 +1,3 @@
-require'strict'
-require'ParseLua'
-local util = require'Util'
-
-local function debug_printf(...)
-	--[[
-	util.Printf(...)
-	--]]
-end
-
 --
 -- FormatIdentity.lua
 --
@@ -16,6 +6,16 @@ end
 -- This can be used to get back a Lua source after renaming some variables in
 -- an AST.
 --
+
+require'strict'
+
+local util = require'Util'
+
+local function debug_printf(...)
+	--[[
+	util.Printf(...)
+	--]]
+end
 
 local function Format_Identity(ast)
 	local out = {

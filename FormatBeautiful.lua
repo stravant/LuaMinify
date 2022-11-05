@@ -4,8 +4,6 @@
 -- Returns a beautified version of the code, including comments
 --
 
-local parser = require"ParseLua"
-local ParseLua = parser.ParseLua
 local util = require'Util'
 local lookupify = util.Lookupify
 
