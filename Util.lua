@@ -4,8 +4,9 @@
 --
 -- Provides some common utilities shared throughout the project.
 --
+local Util = {}
 
-local function lookupify(tb)
+function Util.Lookupify(tb)
 	for _, v in pairs(tb) do
 		tb[v] = true
 	end
@@ -13,19 +14,19 @@ local function lookupify(tb)
 end
 
 
-local function CountTable(tb)
+function Util.CountTable(tb)
 	local c = 0
 	for _ in pairs(tb) do c = c + 1 end
 	return c
 end
 
 
-local function PrintTable(tb, atIndent)
+function Util.PrintTable(tb, atIndent)
 	if tb.Print then
 		return tb.Print()
 	end
 	atIndent = atIndent or 0
-	local useNewlines = (CountTable(tb) > 1)
+	local useNewlines = (Util.CountTable(tb) > 1)
 	local baseIndent = string.rep('    ', atIndent+1)
 	local out = "{"..(useNewlines and '\n' or '')
 	for k, v in pairs(tb) do
@@ -34,7 +35,7 @@ local function PrintTable(tb, atIndent)
 			out = out..(useNewlines and baseIndent or '')
 			if type(k) == 'number' then
 				--nothing to do
-			elseif type(k) == 'string' and k:match("^[A-Za-z_][A-Za-z0-9_]*$") then 
+			elseif type(k) == 'string' and k:match("^[A-Za-z_][A-Za-z0-9_]*$") then
 				out = out..k.." = "
 			elseif type(k) == 'string' then
 				out = out.."[\""..k.."\"] = "
@@ -46,7 +47,7 @@ local function PrintTable(tb, atIndent)
 			elseif type(v) == 'number' then
 				out = out..v
 			elseif type(v) == 'table' then
-				out = out..PrintTable(v, atIndent+(useNewlines and 1 or 0))
+				out = out..Util.PrintTable(v, atIndent+(useNewlines and 1 or 0))
 			else
 				out = out..tostring(v)
 			end
@@ -63,10 +64,10 @@ local function PrintTable(tb, atIndent)
 end
 
 
-local function splitLines(str)
+function Util.SplitLines(str)
 	if str:match("\n") then
 		local lines = {}
-		for line in str:gmatch("[^\n]*") do 
+		for line in str:gmatch("[^\n]*") do
 			table.insert(lines, line)
 		end
 		assert(#lines > 0)
@@ -77,15 +78,8 @@ local function splitLines(str)
 end
 
 
-local function printf(fmt, ...)
+function Util.Printf(fmt, ...)
 	return print(string.format(fmt, ...))
 end
 
-
-return {
-	PrintTable = PrintTable,
-	CountTable = CountTable,
-	lookupify  = lookupify,
-	splitLines = splitLines,
-	printf     = printf,
-}
+return Util

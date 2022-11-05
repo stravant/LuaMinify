@@ -11,7 +11,7 @@
 require'strict'
 
 local util = require'Util'
-local lookupify = util.lookupify
+local lookupify = util.Lookupify
 
 local WhiteChars = lookupify{' ', '\n', '\t', '\r'}
 local EscapeLookup = {['\r'] = '\\r', ['\n'] = '\\n', ['\t'] = '\\t', ['"'] = '\\"', ["'"] = "\\'"}

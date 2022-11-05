@@ -7,7 +7,7 @@
 local parser = require"ParseLua"
 local ParseLua = parser.ParseLua
 local util = require'Util'
-local lookupify = util.lookupify
+local lookupify = util.Lookupify
 
 local LowerChars = lookupify{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 
 							 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 

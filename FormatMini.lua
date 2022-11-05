@@ -2,7 +2,7 @@
 local parser = require'ParseLua'
 local ParseLua = parser.ParseLua
 local util = require'Util'
-local lookupify = util.lookupify
+local lookupify = util.Lookupify
 
 --
 -- FormatMini.lua
