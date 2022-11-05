@@ -71,14 +71,14 @@ function reconstructText(text)
 		else
 			print("Reconstruction failed")
 
-			local inputLines  = util.splitLines(text)
-			local outputLines = util.splitLines(reconstructed)
+			local inputLines  = util.SplitLines(text)
+			local outputLines = util.SplitLines(reconstructed)
 			local n = math.max(#inputLines, #outputLines)
 			for i = 1,n do
 				if inputLines[i] ~= outputLines[i] then
-					util.printf("ERROR on line %i", i)
-					util.printf("Input:  %q", inputLines[i])
-					util.printf("Output: %q", outputLines[i])
+					util.Printf("ERROR on line %i", i)
+					util.Printf("Input:  %q", inputLines[i])
+					util.Printf("Output: %q", outputLines[i])
 					break
 				end
 			end
@@ -111,7 +111,7 @@ local line_nr = 0
 for text in io.lines("test_lines.txt") do
 	line_nr = line_nr + 1
 	if not text:find("FAIL") then
-		--util.printf("\nText: %q", text)
+		--util.Printf("\nText: %q", text)
 		reconstructText(text)
 	end
 end
@@ -119,6 +119,6 @@ end
 
 reconstructText('function a(p,q,r,...) end')
 
-util.printf("Lex    time: %f s", g_lexTime)
-util.printf("Parse  time: %f s", g_parseTime)
-util.printf("Format time: %f s", g_reconstructTime)
+util.Printf("Lex    time: %f s", g_lexTime)
+util.Printf("Parse  time: %f s", g_parseTime)
+util.Printf("Format time: %f s", g_reconstructTime)

@@ -1,13 +1,3 @@
-require'strict'
-require'ParseLua'
-local util = require'Util'
-
-local function debug_printf(...)
-	--[[
-	util.printf(...)
-	--]]
-end
-
 --
 -- FormatIdentity.lua
 --
@@ -16,6 +6,16 @@ end
 -- This can be used to get back a Lua source after renaming some variables in
 -- an AST.
 --
+
+require'strict'
+
+local util = require'Util'
+
+local function debug_printf(...)
+	--[[
+	util.Printf(...)
+	--]]
+end
 
 local function Format_Identity(ast)
 	local out = {
@@ -26,7 +26,7 @@ local function Format_Identity(ast)
 		appendStr = function(self, str)
 			table.insert(self.rope, str)
 
-			local lines = util.splitLines(str)
+			local lines = util.SplitLines(str)
 			if #lines == 1 then
 				self.char = self.char + #str
 			else
@@ -41,7 +41,7 @@ local function Format_Identity(ast)
 			--[*[
 			--debug_printf("appendToken(%q)", token.Data)
 			local data  = token.Data
-			local lines = util.splitLines(data)
+			local lines = util.SplitLines(data)
 			while self.line + #lines < token.Line do
 				print("Inserting extra line")
 				self.str  = self.str .. '\n'
@@ -100,7 +100,7 @@ local function Format_Identity(ast)
 		local function appendComma(mandatory, seperators)
 			if true then
 				seperators = seperators or { "," }
-				seperators = util.lookupify( seperators )
+				seperators = util.Lookupify( seperators )
 				if not mandatory and not seperators[peek()] then
 					return
 				end
